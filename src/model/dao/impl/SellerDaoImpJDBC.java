@@ -4,7 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import db.DB;
 import db.DbException;
@@ -104,6 +107,61 @@ public class SellerDaoImpJDBC implements SellerDao {
 	public List<Seller> findAll() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	
+	/*Para implementar o método findByDepartment, 
+	 * que busca vendedores (Seller) com base em um determinado departamento (Department)*/
+	@Override
+	public List<Seller> findByDepartment(Department department) {
+		PreparedStatement st = null;
+	    ResultSet rs = null;
+	    List<Seller> list = new ArrayList<>();
+	    
+	 // Mapa para armazenar instâncias de Department e evitar duplicação
+	    Map<Integer, Department> map = new HashMap<>();
+	    
+	    
+	    try {
+	        st = conn.prepareStatement(
+	            "SELECT seller.*, department.Name as DepName "
+	            + "FROM seller INNER JOIN department "
+	            + "ON seller.DepartmentId = department.Id "
+	            + "WHERE department.Id = ? "
+	            +"ORDER BY Name" );
+	        
+	        st.setInt(1, department.getId());
+	        rs = st.executeQuery();
+	        
+	       
+	        
+	        while (rs.next()) {
+	        	// Verifica se o Department já existe no mapa
+	            Department dep = map.get(rs.getInt("DepartmentId"));
+	            
+	            // Se não existe, cria e adiciona ao mapa
+	            if (dep == null) {
+	                dep = instantiateDepartment(rs);
+	                
+	                map.put(rs.getInt("DepartmentId"), dep);
+	            }
+	             // Criando e populando o vendedor
+	            Seller obj = instantiateSeller(rs, dep);
+	           
+	            
+	            // Adicionando o vendedor à lista
+	            list.add(obj);
+	        }
+	        return list;
+	    } 
+	    catch (SQLException e) {
+	        throw new DbException(e.getMessage());
+	    } 
+	    finally {
+	        DB.closeResultSet(rs);
+	        DB.closeStatement(st);
+	    }
+
 	}
 
 }
